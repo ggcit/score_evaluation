@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>평가위원 채점표</title>
+  <style>
+    body { 
+      font-family: '맑은 고딕', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; 
+      margin: 0 auto; width: 95%; 
+      background-color: #f8f9fa;
+      line-height: 1.6;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin: 20px 0;
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-bottom: 10px; 
+      font-size: 11px;
+      background: white;
+    }
+    th, td { 
+      border: 1px solid #dee2e6; 
+      padding: 6px; 
+      text-align: center; 
+      vertical-align: middle; 
+    }
+    th { 
+      background: #e9ecef; 
+      font-weight: 600;
+      color: #495057;
+    }
+    textarea { 
+      width: 100%; 
+      height: 80px; 
+      border: 1px solid #ced4da; 
+      font-size: 11px; 
+      padding: 8px; 
+      resize: none;
+      border-radius: 4px;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    textarea:focus {
+      border-color: #80bdff;
+      outline: 0;
+      box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    input[type="text"] { 
+      width: 180px; 
+      text-align: center; 
+      height: 32px; 
+      font-size: 14px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      padding: 0 8px;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    input[type="text"]:focus {
+      border-color: #80bdff;
+      outline: 0;
+      box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    select { 
+      height: 32px; 
+      font-size: 14px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      padding: 0 8px;
+      background-color: white;
+    }
+    .section-title { 
+      font-size: 20px; 
+      font-weight: bold; 
+      margin: 20px 0; 
+      text-align: center;
+      color: #343a40;
+    }
+    .score-cell label { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      font-size: 10px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background-color 0.15s ease-in-out;
+    }
+    .score-cell label:hover {
+      background-color: #f8f9fa;
+    }
+    .score-cell input[type="radio"] {
+      margin-bottom: 4px;
+    }
+    #totalTextCell { 
+      text-align: right; 
+      font-weight: bold; 
+      border: none; 
+      padding: 12px 0; 
+      font-size: 16px;
+      color: #495057;
+      background-color: #f8f9fa;
+    }
+    .btn-row { 
+      display: flex; 
+      gap: 12px; 
+      justify-content: flex-end; 
+      margin: 20px 0;
+    }
+    .btn { 
+      padding: 10px 20px; 
+      font-size: 14px; 
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      transition: all 0.15s ease-in-out;
+      font-weight: 500;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .submit-btn {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    .submit-btn:hover:not(:disabled) {
+      background-color: #0056b3;
+      border-color: #0056b3;
+    }
+    .btn:not(.submit-btn) {
+      background-color: #6c757d;
+      color: white;
+      border-color: #6c757d;
+    }
+    .btn:not(.submit-btn):hover:not(:disabled) {
+      background-color: #545b62;
+      border-color: #4e555b;
+    }
+    .btn[onclick="resetForm()"]:hover:not(:disabled) {
+      background-color: #c82333;
+      border-color: #bd2130;
+    }
+    .form-group {
+      margin: 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .form-group label {
+      font-weight: 600;
+      color: #495057;
+      min-width: 80px;
+    }
+    @media print { 
+      .btn-row { display: none; }
+      body { background-color: white; }
+      .container { box-shadow: none; }
+    }
+    @media (max-width: 768px) {
+      body { width: 98%; }
+      .form-group { flex-direction: column; align-items: flex-start; }
+      .btn-row { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+
+  <!-- html2pdf (PDF 저장용) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Supabase JS SDK -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="container">
+  <h2 class="section-title">평가위원별 채점표</h2>
+
+  <div style="text-align:center;margin:20px 0;">
+    <div class="form-group" style="justify-content:center;margin:15px 0;">
+      <label><strong>사업명:</strong></label>
+      <span>의정정보시스템 운영 용역</span>
+    </div>
+    <div class="form-group" style="justify-content:center;margin:15px 0;gap:30px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label><strong>제안사명:</strong></label>
+        <select id="proposalName" required>
+          <option value="">선택하세요</option>
+          <option value="A">A</option><option value="B">B</option>
+          <option value="C">C</option><option value="D">D</option>
+          <option value="E">E</option><option value="F">F</option>
+          <option value="G">G</option><option value="H">H</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label><strong>평가위원:</strong></label>
+        <input type="text" id="evaluator" required placeholder="평가위원명을 입력하세요">
+      </div>
+    </div>
+  </div>
+
+
+<form id="scoreForm">
+  <table>
+    <thead>
+      <tr>
+        <th>평가항목</th>
+        <th>세부항목</th>
+        <th>평가요소</th>
+        <th><strong>배점</strong></th>
+        <th><strong>수</strong></th><th><strong>우</strong></th><th><strong>미</strong></th><th><strong>양</strong></th><th><strong>가</strong></th>
+        <th><strong>점수</strong></th>
+      </tr>
+    </thead>
+    <tbody id="scoreTableBody"></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="10" id="totalTextCell"><strong>총점:</strong> <span id="totalText"><strong>0.0</strong></span> / <strong>70.0점 만점</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div style="margin: 20px 0;">
+    <label style="font-weight: 600; color: #495057; margin-bottom: 8px; display: block;">종합의견</label>
+    <textarea id="comment" maxlength="700" placeholder="평가에 대한 종합적인 의견을 입력해주세요 (최대 700자)"></textarea>
+    <div style="text-align: right; font-size: 12px; color: #6c757d; margin-top: 4px;">
+      <span id="commentCount">0</span>/700자
+    </div>
+  </div>
+
+  <div class="btn-row" style="justify-content:space-between;align-items:center;">
+    <button type="button" class="btn" onclick="resetForm()" style="background-color: #dc3545; border-color: #dc3545;">초기화</button>
+    <button type="submit" class="btn submit-btn">제출</button>
+    <div style="display:flex;gap:8px;">
+      <button type="button" class="btn" onclick="saveToPDF()">PDF 저장</button>
+      <button type="button" class="btn" onclick="printForm()">인쇄</button>
+    </div>
+  </div>
+</form>
+</div>
+
+<script>
+/* ================================
+   🔧 구성값: 프로젝트에 맞게 교체
+   ================================ */
+const SUPABASE_URL = "https://ghbcbhwzhckvcimwktdg.supabase.co"; // ← 교체
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYmNiaHd6aGNrdmNpbXdrdGRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5OTQ3MjksImV4cCI6MjA3MzU3MDcyOX0.2NrbJNePfkzIlzKREsuJvTXgQu04vSJ_ScDdRT0MIkI";           // ← 교체
+// (선택) 기존 GAS 폴백 URL. 폴백이 필요 없으면 빈 문자열로 두기.
+const GAS_FALLBACK_URL = "https://script.google.com/macros/s/AKfycbxOwWfJEn06JciJ1LckdUZQtVfMP0gSUNe2of2gSZJa1DT7uLbfrHYxuPdj7NCkoKLo4w/exec";
+
+/* ================================
+   Supabase 클라이언트 (개선된 초기화)
+   ================================ */
+let supabase;
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: false,
+      detectSessionInUrl: false
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10
+      }
+    }
+  });
+  console.log('✅ Supabase 클라이언트 초기화 성공');
+  
+  // 연결 테스트
+  testSupabaseConnection();
+} catch (error) {
+  console.error('❌ Supabase 클라이언트 초기화 실패:', error);
+  // 폴백 모드로 전환
+  window.supabaseAvailable = false;
+}
+
+/* ================================
+   Supabase 연결 테스트
+   ================================ */
+async function testSupabaseConnection() {
+  try {
+    console.log('🔍 Supabase 연결 테스트 중...');
+    const { data, error } = await supabase
+      .from('evaluations')
+      .select('count')
+      .limit(1);
+    
+    if (error) {
+      console.error('❌ Supabase 연결 테스트 실패:', error);
+      if (error.code === 'PGRST116') {
+        console.error('💡 해결방법: evaluations 테이블이 존재하지 않습니다. Supabase에서 테이블을 생성해주세요.');
+      }
+    } else {
+      console.log('✅ Supabase 연결 테스트 성공');
+    }
+  } catch (err) {
+    console.error('❌ Supabase 연결 테스트 중 오류:', err);
+  }
+}
+
+/* ================================
+   평가 항목(행 병합 포함)
+   ================================ */
+const 항목목록 = [
+  { 대:"전략 및 방법론(16)", rowspan:4, 소:"사업이해도", 배점:4, 설명:"사업수행계획이 사업의 목표 및 특성에 부합하게 구체적이고 적절한지 평가" },
+  { 대:"", 소:"추진전략", 배점:4, 설명:"사업수행 일정과 위험요소를 고려한 추진전략 수립의 타당성을 평가" },
+  { 대:"", 소:"추진체계", 배점:4, 설명:"사업 특성과 제시한 추진전략에 따른 수행조직 구성과 참여 조직간 역할, 책임, 품질 확보 방안이 구체적이고 적절한지 평가" },
+  { 대:"", 소:"사업추진 방법론", 배점:4, 설명:"사업추진방법이 구체적이고 적절한지와 그 실제 적용 사례 및 경험에 따른 단계별 산출물을 제시하였는지 평가" },
+
+  { 대:"사업수행계획(30)", rowspan:5, 소:"컨설팅 분석", 배점:8, 설명:"ISP 수립 방법론 및 적정한 분석 도구를 활용하여 현행 업무환경 및 업무프로세스, 시스템을 정확히 분석하였는지 평가하고, 제안한 방안 및 기술의 명확성과 타당성을 평가" },
+  { 대:"", 소:"컨설팅 설계", 배점:8, 설명:"현황 분석을 토대로 일관성 있고 단기 및 중장기적으로 이행 가능한 전략계획을 구체적으로 수립할 수 있고 전략계획 이행시 위험요인 및 대응방안, 고려 사항 등을 충분히 제시하고 있는가를 평가" },
+  { 대:"", 소:"제약사항", 배점:5, 설명:"제안요청서의 기술, 표준, 업무, 법제도 및 안전관리 등의 제약조건 내에서 목표사업을 수행하기 위해 제시한 수행 및 검증방안이 구체적이고 적절한지 평가" },
+  { 대:"", 소:"수행환경", 배점:4, 설명:"컨설팅 과업 수행에 필요한 장비 및 작업장소 등 인프라의 준비 및 대응방안이 제안요청서의 요구사항을 충족할 만큼 구체적이고 적절한지 평가" },
+  { 대:"", 소:"보안요구사항", 배점:5, 설명:"기술적 보안 구현방안이 제안요청서의 보안요구사항을 충족할 만큼 구체적이고 적절한지 평가" },
+
+  { 대:"프로젝트관리(12)", rowspan:4, 소:"일정관리", 배점:3, 설명:"사업수행에 필요한 수행기간과 세부 일정이 구체적이고 적절한지와 각 활동에 필요한 일정계획이 사업추진방법론에 제시된 단계별 산출물과 연계하여 적절히 수립되었는지 평가" },
+  { 대:"", 소:"품질관리", 배점:3, 설명:"품질관리방안(품질관리의 범위, 절차, 점검방법 등)이 해당 사업의 수행에 적합한지 평가" },
+  { 대:"", 소:"기밀보안관리", 배점:3, 설명:"사업을 추진하는 동안 발생할 수 있는 악영향으로부터 기밀을 보호하고 원활한 사업수행의 보장을 위한 물리적, 관리적 보안 체계 및 대책이 구체적이고 적절한지 평가" },
+  { 대:"", 소:"위험관리", 배점:3, 설명:"사업과 관련한 위험에 대한 식별 및 분석, 위험 관리 절차 및 대응방안 등 위험 관리계획이 구체적이고 적절한지 평가" },
+
+  { 대:"프로젝트지원(12)", rowspan:3, 소:"교육훈련", 배점:4, 설명:"ISP 담당자, 주요 이해관계자를 위해 필요한 교육훈련 내용, 방법, 기간 및 횟수 등을 구체적으로 제시하였는지 평가" },
+  { 대:"", 소:"기술지원", 배점:4, 설명:"기술지원 대상 범위, 내용 및 수준, 기술 매뉴얼 등 기술지원이 필요한 사항에 대한 계획 및 방안이 구체적이고 적절한지 평가" },
+  { 대:"", 소:"인수인계", 배점:4, 설명:"검수 및 인계 등을 위한 인계 전략과 검수 대상·방법, 충족조건 및 인계계획이 구체적이고 적절한지 평가" },
+];
+
+/* ================================
+   표 생성 (행 병합)
+   ================================ */
+const tbody = document.getElementById("scoreTableBody");
+let currentCategory = "";
+항목목록.forEach((item, idx) => {
+  const tr = document.createElement("tr");
+  const scoreOptions = [
+    item.배점,
+    +(item.배점*0.9).toFixed(1),
+    +(item.배점*0.8).toFixed(1),
+    +(item.배점*0.7).toFixed(1),
+    +(item.배점*0.6).toFixed(1)
+  ];
+  tr.innerHTML = `
+    ${item.대 && item.대 !== currentCategory ? `<td rowspan="${item.rowspan}">${item.대}</td>` : ""}
+    <td>${item.소}</td>
+    <td style="text-align:left">${item.설명}</td>
+    <td><strong>${item.배점}</strong></td>
+    ${scoreOptions.map(val => `
+      <td class="score-cell">
+        <label><input type="radio" name="score${idx}" value="${val}"><span><strong>${val}</strong></span></label>
+      </td>`).join("")}
+    <td><span class="score-text" name="scoreVal${idx}"></span></td>
+  `;
+  tbody.appendChild(tr);
+  currentCategory = item.대 || currentCategory;
+});
+
+/* ================================
+   합계 갱신 및 이벤트 리스너
+   ================================ */
+document.querySelectorAll('input[type=radio]').forEach(r => {
+  r.addEventListener('change', e => {
+    const span = document.querySelector(`span[name="scoreVal${e.target.name.replace('score','')}"]`);
+    if (span) span.innerHTML = `<strong>${e.target.value}</strong>`;
+    const total = Array.from(document.querySelectorAll("span[name^='scoreVal']"))
+      .reduce((sum, el) => sum + parseFloat(el.textContent || 0), 0);
+    document.getElementById("totalText").innerHTML = `<strong>${total.toFixed(1)}</strong>`;
+  });
+});
+
+// 종합의견 글자 수 카운터
+document.getElementById('comment').addEventListener('input', function() {
+  const count = this.value.length;
+  document.getElementById('commentCount').textContent = count;
+  
+  // 글자 수에 따른 색상 변경
+  const countElement = document.getElementById('commentCount');
+  if (count > 650) {
+    countElement.style.color = '#dc3545'; // 빨간색
+  } else if (count > 600) {
+    countElement.style.color = '#fd7e14'; // 주황색
+  } else {
+    countElement.style.color = '#6c757d'; // 회색
+  }
+});
+
+/* ================================
+   데이터 검증 및 보안 유틸
+   ================================ */
+function sanitizeInput(input) {
+  if (typeof input !== 'string') return '';
+  return input.trim().replace(/[<>\"'&]/g, function(match) {
+    const escapeMap = {
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      '&': '&amp;'
+    };
+    return escapeMap[match];
+  });
+}
+
+function validateProposalName(name) {
+  const validNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  return validNames.includes(name);
+}
+
+function validateEvaluatorName(name) {
+  return name.length >= 2 && name.length <= 50 && /^[가-힣a-zA-Z\s]+$/.test(name);
+}
+
+function buildScoreMap() {
+  const map = {};
+  항목목록.forEach((item, idx) => {
+    const key = `Q${String(idx+1).padStart(2,'0')} ${item.소}`;
+    const score = document.querySelector(`span[name="scoreVal${idx}"]`)?.textContent || '';
+    // 점수 유효성 검증
+    const scoreNum = parseFloat(score);
+    if (score && (isNaN(scoreNum) || scoreNum < 0 || scoreNum > item.배점)) {
+      console.warn(`잘못된 점수: ${key} = ${score}`);
+    }
+    map[key] = score;
+  });
+  return map;
+}
+
+function validateAllChecked() {
+  const required = 항목목록.length;
+  const selected = Array.from(document.querySelectorAll("span[name^='scoreVal']"))
+                  .filter(s => s.textContent?.trim()).length;
+  return selected === required;
+}
+
+function validateTotalScore() {
+  const total = Array.from(document.querySelectorAll("span[name^='scoreVal']"))
+                 .reduce((s, el) => s + parseFloat(el.textContent || 0), 0);
+  const maxScore = 항목목록.reduce((sum, item) => sum + item.배점, 0);
+  return total >= 0 && total <= maxScore;
+}
+
+/* ================================
+   중복제출 방지용 키(브라우저 단위)
+   ================================ */
+function ensureSubmitKey() {
+  const key = localStorage.getItem('eval_submit_key');
+  if (key) return key;
+  const newKey = (crypto.randomUUID && crypto.randomUUID()) || (Math.random().toString(36).slice(2) + Date.now());
+  localStorage.setItem('eval_submit_key', newKey);
+  return newKey;
+}
+
+/* ================================
+   제출: Supabase insert (+옵션 폴백) - 개선된 버전
+   ================================ */
+document.getElementById("scoreForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  
+  // 입력값 검증
+  const proposalName = sanitizeInput(document.getElementById("proposalName").value);
+  const evaluator = sanitizeInput(document.getElementById("evaluator").value);
+  const comment = sanitizeInput(document.getElementById("comment").value);
+  
+  // 상세한 검증
+  if (!proposalName) {
+    showError('제안사명을 선택해주세요.');
+    document.getElementById("proposalName").focus();
+    return;
+  }
+  
+  if (!validateProposalName(proposalName)) {
+    showError('유효하지 않은 제안사명입니다.');
+    document.getElementById("proposalName").focus();
+    return;
+  }
+  
+  if (!evaluator) {
+    showError('평가위원명을 입력해주세요.');
+    document.getElementById("evaluator").focus();
+    return;
+  }
+  
+  if (!validateEvaluatorName(evaluator)) {
+    showError('평가위원명은 2-50자의 한글, 영문, 공백만 입력 가능합니다.');
+    document.getElementById("evaluator").focus();
+    return;
+  }
+  
+  if (!validateAllChecked()) {
+    showError('모든 문항에 점수를 선택해주세요.');
+    return;
+  }
+  
+  if (!validateTotalScore()) {
+    showError('총점이 유효하지 않습니다. 점수를 다시 확인해주세요.');
+    return;
+  }
+
+  const total = Array.from(document.querySelectorAll("span[name^='scoreVal']"))
+                 .reduce((s, el) => s + parseFloat(el.textContent || 0), 0);
+
+  const payload = {
+    proposalName, 
+    evaluator,
+    total: +total.toFixed(1),
+    comment,
+    scoreMap: buildScoreMap(),
+    timestamp: new Date().toISOString()
+  };
+
+  const btn = document.querySelector('.submit-btn'); 
+  btn.disabled = true; 
+  btn.textContent = '전송 중…';
+  btn.style.opacity = '0.6';
+
+  const record = {
+    proposal_name: payload.proposalName,
+    evaluator: payload.evaluator,
+    total: payload.total,
+    comment: payload.comment,
+    score_map: payload.scoreMap,
+    user_agent: navigator.userAgent || null,
+    submit_key: ensureSubmitKey(),
+    created_at: payload.timestamp
+  };
+
+  let done = false;
+  let errorMessage = '';
+
+  // 1) Supabase 저장 시도
+  if (supabase && window.supabaseAvailable !== false) {
+    try {
+      console.log('🔄 Supabase에 데이터 저장 시도...');
+      console.log('📤 전송할 데이터:', record);
+      
+      const { data, error } = await supabase
+        .from('evaluations')
+        .insert(record)
+        .select();
+        
+      if (error) {
+        console.error('❌ Supabase 오류 상세:', error);
+        throw new Error(`Supabase 오류: ${error.message} (코드: ${error.code})`);
+      }
+      
+      console.log('✅ Supabase 저장 성공:', data);
+      done = true;
+    } catch (err) {
+      console.error('❌ Supabase insert 실패:', err);
+      console.error('❌ 오류 스택:', err.stack);
+      errorMessage = err.message;
+    }
+  } else {
+    console.warn('⚠️ Supabase 클라이언트를 사용할 수 없습니다.');
+  }
+
+  // 2) (선택) GAS 폴백
+  if (!done && GAS_FALLBACK_URL) {
+    try {
+      console.log('🔄 GAS 폴백으로 데이터 저장 시도...');
+      const qs = new URLSearchParams({ 
+        payload: JSON.stringify(payload),
+        timestamp: payload.timestamp
+      }).toString();
+      
+      const response = await fetch(`${GAS_FALLBACK_URL}?${qs}`, { 
+        method: 'GET', 
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+      
+      console.log('✅ GAS 폴백 저장 성공');
+      done = true;
+    } catch (err) {
+      console.error('❌ GAS fallback 실패:', err);
+      errorMessage = err.message;
+    }
+  }
+
+  // 3) 결과 처리
+  if (done) {
+    showSuccess('제출이 완료되었습니다! 데이터베이스에 저장되었습니다.');
+    // resetForm(); // 제출 후 폼을 초기화하지 않음 (PDF/인쇄를 위해 데이터 유지)
+  } else {
+    showError(`제출 실패: ${errorMessage || '네트워크 또는 서버 오류가 발생했습니다.'}`);
+  }
+
+  btn.disabled = false; 
+  btn.textContent = '제출';
+  btn.style.opacity = '1';
+});
+
+/* ================================
+   사용자 피드백 함수들
+   ================================ */
+function showSuccess(message) {
+  // 기존 알림 제거
+  const existingAlert = document.querySelector('.alert-success');
+  if (existingAlert) existingAlert.remove();
+  
+  const alert = document.createElement('div');
+  alert.className = 'alert-success';
+  alert.style.cssText = `
+    position: fixed; top: 20px; right: 20px; z-index: 1000;
+    background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+    padding: 12px 20px; border-radius: 4px; font-size: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  `;
+  alert.textContent = message;
+  document.body.appendChild(alert);
+  
+  setTimeout(() => {
+    if (alert.parentNode) alert.remove();
+  }, 5000);
+}
+
+function showError(message) {
+  // 기존 알림 제거
+  const existingAlert = document.querySelector('.alert-error');
+  if (existingAlert) existingAlert.remove();
+  
+  const alert = document.createElement('div');
+  alert.className = 'alert-error';
+  alert.style.cssText = `
+    position: fixed; top: 20px; right: 20px; z-index: 1000;
+    background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
+    padding: 12px 20px; border-radius: 4px; font-size: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  `;
+  alert.textContent = message;
+  document.body.appendChild(alert);
+  
+  setTimeout(() => {
+    if (alert.parentNode) alert.remove();
+  }, 5000);
+}
+
+function resetForm() {
+  // 사용자 확인
+  if (!confirm('모든 입력 데이터를 초기화하시겠습니까?\n(제안사명, 평가위원명, 점수, 종합의견이 모두 삭제됩니다)')) {
+    return;
+  }
+  
+  // 폼 초기화
+  document.getElementById("scoreForm").reset();
+  document.getElementById("totalText").innerHTML = '<strong>0.0</strong>';
+  document.querySelectorAll('span[name^="scoreVal"]').forEach(s => s.textContent = '');
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  document.getElementById('commentCount').textContent = '0';
+  
+  // 성공 메시지
+  showSuccess('폼이 초기화되었습니다.');
+}
+
+/* ================================
+   PDF 저장 (개선된 버전)
+   ================================ */
+function saveToPDF() {
+  const proposalName = document.getElementById("proposalName").value.trim();
+  const evaluator = document.getElementById("evaluator").value.trim();
+  
+  if (!proposalName || !evaluator) {
+    showError('제안사명과 평가위원명을 모두 입력해주세요.');
+    return;
+  }
+
+  // PDF 생성 중 표시
+  const originalBtn = event.target;
+  const originalText = originalBtn.textContent;
+  originalBtn.disabled = true;
+  originalBtn.textContent = 'PDF 생성 중...';
+  originalBtn.style.opacity = '0.6';
+
+  // 버튼 숨기기
+  const btnBars = document.querySelectorAll('.btn-row'); 
+  btnBars.forEach(b => b.style.display = 'none');
+
+  // 텍스트 영역을 div로 변환
+  const ta = document.getElementById('comment');
+  const parent = ta.parentElement;
+  const tempDiv = document.createElement('div');
+  tempDiv.style.cssText = 'border:1px solid #000;padding:5px;min-height:80px;white-space:pre-wrap;text-align:left;font-size:11px;';
+  tempDiv.textContent = ta.value;
+  ta.style.display = 'none';
+  parent.insertBefore(tempDiv, ta);
+
+  // PDF 옵션 설정
+  const opt = {
+    margin: [10, 10, 10, 10],
+    filename: `평가표_${proposalName}_${evaluator}_${new Date().toISOString().slice(0,10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { 
+      scale: 2, 
+      useCORS: true, 
+      logging: false,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    },
+    jsPDF: { 
+      unit: 'mm', 
+      format: 'a4', 
+      orientation: 'portrait',
+      compress: true
+    }
+  };
+
+  // PDF 생성 및 저장
+  html2pdf()
+    .set(opt)
+    .from(document.body)
+    .save()
+    .then(() => {
+      console.log('✅ PDF 저장 성공');
+      showSuccess('PDF가 성공적으로 저장되었습니다.');
+    })
+    .catch(err => {
+      console.error('❌ PDF 저장 실패:', err);
+      showError('PDF 저장에 실패했습니다. 다시 시도해주세요.');
+    })
+    .finally(() => {
+      // UI 복원
+      tempDiv.remove(); 
+      ta.style.display = ''; 
+      btnBars.forEach(b => b.style.display = '');
+      originalBtn.disabled = false;
+      originalBtn.textContent = originalText;
+      originalBtn.style.opacity = '1';
+    });
+}
+
+/* ================================
+   인쇄 (개선된 버전)
+   ================================ */
+function printForm() {
+  const proposalName = document.getElementById("proposalName").value.trim();
+  const evaluator = document.getElementById("evaluator").value.trim();
+  
+  if (!proposalName || !evaluator) {
+    showError('제안사명과 평가위원명을 모두 입력해주세요.');
+    return;
+  }
+
+  // 인쇄 전 UI 준비
+  const btnBars = document.querySelectorAll('.btn-row'); 
+  btnBars.forEach(b => b.style.display = 'none');
+
+  // 텍스트 영역을 div로 변환
+  const ta = document.getElementById('comment');
+  const parent = ta.parentElement;
+  const tempDiv = document.createElement('div');
+  tempDiv.style.cssText = 'border:1px solid #000;padding:5px;min-height:80px;white-space:pre-wrap;text-align:left;font-size:11px;';
+  tempDiv.textContent = ta.value;
+  ta.style.display = 'none';
+  parent.insertBefore(tempDiv, ta);
+
+  // 인쇄 대화상자 표시
+  window.print();
+
+  // 인쇄 후 UI 복원
+  setTimeout(() => {
+    tempDiv.remove(); 
+    ta.style.display = ''; 
+    btnBars.forEach(b => b.style.display = '');
+  }, 100);
+}
+</script>
+
+</body>
+</html>
